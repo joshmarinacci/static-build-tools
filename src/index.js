@@ -2,9 +2,11 @@ import path from 'path'
 import fs from 'fs'
 
 export function make_custom_element(fn) {
-    return function() {
-        let children = []
-        return fn({children})
+    return async function(opts,...children) {
+        if(!opts) opts = {}
+        if(!children) children = []
+        opts.children = await Promise.all(children)
+        return await fn(opts)
     }
 }
 
@@ -13,8 +15,9 @@ export function make_element(name, settings) {
     let close = settings.hasOwnProperty('close')?settings.close:true;
     let break_line = settings.hasOwnProperty('break_line')?settings.break_line:true;
     // console.log(`${name} is close=${close} break_line =${break_line}`)
-    return function(opts,...children) {
-        // console.log("options = ", opts, typeof opts)
+    return async function(opts,...children) {
+        opts = await Promise.resolve(opts)
+        children = await Promise.all(children)
         if(typeof opts !== 'object') {
             children.unshift(opts)
             opts = {}
@@ -43,6 +46,7 @@ export async function page(opts,content) {
     log("building dir",opts.builddir)
     await fs.promises.mkdir(opts.builddir,{recursive:true})
     log("rendering page to",pth)
+    content = await Promise.resolve(content)
     await fs.promises.writeFile(pth,content);
 }
 
