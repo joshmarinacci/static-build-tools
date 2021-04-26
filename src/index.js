@@ -1,5 +1,6 @@
 import path from 'path'
 import fs from 'fs'
+import child_process from 'child_process'
 
 export function make_custom_element(fn) {
     return async function(opts,...children) {
@@ -36,7 +37,6 @@ export function make_element(name, settings) {
     }
 }
 
-
 function log(...args) {
     console.log(...args)
 }
@@ -57,3 +57,38 @@ export async function copy(opts) {
     await fs.promises.writeFile(pth,data)
 }
 
+export async function copyall(opts) {
+    let files = await fs.promises.readdir(opts.src)
+    files = files.filter(opts.include)
+    await Promise.all(files.map(async (file) => {
+        let pth = path.join(opts.builddir, file)
+        let data = await fs.promises.readFile(path.join(opts.src, file))
+        await fs.promises.writeFile(pth, data)
+    }))
+}
+
+export async function async_map(PAGES, param2) {
+    await Promise.all(PAGES.map(param2))
+}
+
+export async function exec_and_wait(cmd) {
+    return new Promise((res, rej) => {
+        log(`executing: ${cmd}`)
+        child_process.exec(cmd, ((error, stdout) => {
+            // console.log("error",error)//.split("\n").join("\nERRROR"));
+            if (error) return rej(error)
+            // console.log("stdout",stdout.split("\n").join("\nSTDOUT:"))
+            res(stdout)
+        }))
+    })
+}
+
+export async function file_exists(pth) {
+    try {
+        let info = await fs.promises.stat(pth)
+        return true
+    } catch (e) {
+        console.log(e)
+        return false
+    }
+}
